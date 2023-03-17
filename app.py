@@ -1,18 +1,39 @@
+import os
+from io import BytesIO
+
+import gdown
 import streamlit as st
 from PIL import Image
-from io import BytesIO
+
 import model
+
+model_url_dict = {
+    'Faster-RCNN-Resnet50-FPN': 'https://drive.google.com/u/1/uc?id=12HQmHq2KD52JjtLWYTFcDShMl-a7xlE4&export=download', 
+    'Faster-RCNN-Resnet50-FPN + KL Loss': 'https://drive.google.com/u/1/uc?id=1vOvWUTMH9D7diTo_mbhswkWOR7WnXe6N&export=download'
+}
+
+model_path_dict = {
+    'Faster-RCNN-Resnet50-FPN': './model_without_kl.pth', 
+    'Faster-RCNN-Resnet50-FPN + KL Loss': './model_with_kl.pth'
+}
+
+model_conf_dict = {
+    'Faster-RCNN-Resnet50-FPN': {}, 
+    'Faster-RCNN-Resnet50-FPN + KL Loss': {'use_kl_loss': True}
+}
 
 st.set_page_config(layout="wide", page_title="Object Detector")
 
-st.write("## Detect objects in your image")
+st.write("## Detect objects in your Image")
 st.write(
-    ":dog: Try uploading an image to watch the objects magically detected. " +
+    ":dog: Try uploading an image to watch the objects get magically detected. " +
     "Full quality images can be downloaded from the sidebar. " + 
-    "This code is open source and available " + 
-    "[here](https://github.com/tyler-simons/BackgroundRemoval) on GitHub. "
+    "Object detection models used here are only for experimental use. " +
+    "The code is open source and available " + 
+    "[here](https://github.com/souradipp76/object_detection_kl_app) on GitHub. "+
+    "Check out more about this project [here](https://github.com/souradipp76/box_regression-kl_loss)."
 )
-st.sidebar.write("## Upload and download :gear:")
+st.sidebar.write("## Upload and Download :gear:")
 
 # Download the fixed image
 def convert_image(img):
@@ -22,7 +43,7 @@ def convert_image(img):
     return byte_im
 
 def fix_image(upload, model_name):
-    image = Image.open(upload)
+    image = Image.open(upload).convert('RGB')
     col1.write("Original Image :camera:")
     col1.image(image)
 
@@ -34,20 +55,29 @@ def fix_image(upload, model_name):
                                convert_image(fixed), "fixed.png", "image/png")
 
 def get_detections(image, model_name):
-    use_KL_Loss = False 
-    model_path = './model_w_without_kl.pth'
-    if model_name == 'Faster RCNN + KL Loss':
-        model_path = './model_w_with_kl_3.pth'
-        use_KL_Loss = True
-    net = model.get_model(use_KL_Loss, model_path = model_path)
+    model_path = model_path_dict[model_name]
+    cfg = model_conf_dict[model_name]
+    model_url = model_url_dict[model_name]
+    if not os.path.isfile(model_path):
+        download_model(model_url, model_path)
+    net = model.get_model(model_path = model_path, cfg=cfg)
     fixed_image = model.get_sample_prediction(net, image)
     return fixed_image
 
+@st.cache_resource()
+def download_model(model_url, model_path):
+    url = model_url
+    output = model_path
+    gdown.download(url, output, quiet=False)
+    return output
+
+
 col1, col2 = st.columns(2)
-my_model = st.sidebar.selectbox("Choose model", ['Faster RCNN', 'Faster RCNN + KL Loss'])
 my_upload = st.sidebar.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
+my_model = st.sidebar.selectbox("Choose Model", list(model_url_dict.keys()))
+
 
 if my_upload is not None:
     fix_image(upload=my_upload, model_name = my_model)
 else:
-    fix_image("./zebra.jpg", model_name = my_model)
+    fix_image("./voc.jpg", model_name = my_model)

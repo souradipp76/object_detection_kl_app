@@ -84,12 +84,12 @@ class RoIHeadsKL(torchvision.models.detection.roi_heads.RoIHeads):
         self.num_classes = num_classes
 
         # soft nms params
-        self.softnms = cfg['softnms'] if not cfg is None else False
-        self.softnms_sigma=0.5
+        self.softnms = cfg['softnms'] if not cfg is None and 'softnms' in cfg else False
+        self.softnms_sigma = 0.5
 
         # variance vote params
-        self.var_vote = cfg['var_vote'] if not cfg is None else False
-        self.var_sigma_t=0.02
+        self.var_vote = cfg['var_vote'] if not cfg is None and 'var_vote' in cfg else False
+        self.var_sigma_t = 0.02
 
     def postprocess_detections_kl(
         self,
@@ -377,9 +377,13 @@ def fastrcnn_loss(class_logits, box_regression, labels, regression_targets, box_
 
     return classification_loss, box_loss
     
-def get_model(use_kl_loss = False, model_path = None, cfg=None):
+def get_model(model_path = None, cfg=None):
     num_classes = 21
     in_features = 1024
+    use_kl_loss = False
+    if not cfg is None and 'use_kl_loss' in cfg:
+        use_kl_loss = cfg['use_kl_loss']
+
     model = fasterrcnn_resnet50_fpn()
     if use_kl_loss:
         model.roi_heads = RoIHeadsKL(model, num_classes, cfg)
@@ -418,24 +422,30 @@ def get_sample_prediction(model, img):
     return plot_img_bbox(img, prediction)
 
 
-def plot_img_bbox(img, target):
+def plot_img_bbox(img, target, score_thres = 0.8):
     # plot the image and bboxes
     if 'scores' in target:
         classes = [idx_to_class[l.item()] for l in target['labels']]
-        img = draw_boxes(target['boxes'].cpu().numpy(), classes, target['scores'].cpu().numpy(), img) 
+        img = draw_boxes(target['boxes'].cpu().numpy(), classes, target['scores'].cpu().numpy(), 
+                         img, score_thres) 
         
     return img
 
 
-def draw_boxes(boxes, classes, scores, image):
+def draw_boxes(boxes, classes, scores, image, score_thres):
+    FONT_SCALE = 1e-3  # Adjust for larger font size in all images
+    THICKNESS_SCALE = 1e-3  # Adjust for larger thickness in all images
+    
     W, H = image.size
     image = np.asarray(image).astype(np.uint8)
+    font_scale = max(W, H) * FONT_SCALE
+    thickness = int(min(W, H) * THICKNESS_SCALE)
     for i, box in enumerate(boxes):
         box[0] = max(box[0], 0)
         box[1] = max(box[1], 0)
         box[2] = min(box[2], W)
         box[3] = min(box[3], H)
-        if scores[i] > 0.75:
+        if scores[i] > score_thres:
             cv2.rectangle(
                 image,
                 (int(box[0]), int(box[1])),
@@ -443,5 +453,5 @@ def draw_boxes(boxes, classes, scores, image):
                 (255, 0, 0), 2
             )
             cv2.putText(image, f"{classes[i]},{scores[i]:0.2f}", (int(box[0]), int(box[1]-10)),
-                        cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 0, 0), 2)
+                        cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 0, 0), 2)
     return image
