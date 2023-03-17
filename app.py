@@ -64,7 +64,7 @@ def get_detections(image, model_name):
     fixed_image = model.get_sample_prediction(net, image)
     return fixed_image
 
-@st.cache_data()
+@st.cache_data
 def download_model(model_url, model_path):
     output = wget.download(model_url, model_path)
     return output
