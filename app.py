@@ -1,15 +1,15 @@
 import os
 from io import BytesIO
 
-import gdown
 import streamlit as st
+import wget
 from PIL import Image
 
 import model
 
-model_id_dict = {
-    'Faster-RCNN-Resnet50-FPN': '12HQmHq2KD52JjtLWYTFcDShMl-a7xlE4', 
-    'Faster-RCNN-Resnet50-FPN + KL Loss': '1vOvWUTMH9D7diTo_mbhswkWOR7WnXe6N'
+model_url_dict = {
+    'Faster-RCNN-Resnet50-FPN': 'https://github.com/souradipp76/box_regression-kl_loss/releases/download/v1.0/model_without_kl.pth', 
+    'Faster-RCNN-Resnet50-FPN + KL Loss': 'https://github.com/souradipp76/box_regression-kl_loss/releases/download/v1.0/model_with_kl.pth'
 }
 
 model_path_dict = {
@@ -57,24 +57,22 @@ def fix_image(upload, model_name):
 def get_detections(image, model_name):
     model_path = model_path_dict[model_name]
     cfg = model_conf_dict[model_name]
-    model_id = model_id_dict[model_name]
+    model_url = model_url_dict[model_name]
     if not os.path.isfile(model_path):
-        download_model(model_id, model_path)
+        download_model(model_url, model_path)
     net = model.get_model(model_path = model_path, cfg=cfg)
     fixed_image = model.get_sample_prediction(net, image)
     return fixed_image
 
-@st.cache()
-def download_model(model_id, model_path):
-    id = model_id
-    output = model_path
-    gdown.download(id=id, output=output, quiet=False)
+@st.cache_data()
+def download_model(model_url, model_path):
+    output = wget.download(model_url, model_path)
     return output
 
 
 col1, col2 = st.columns(2)
 my_upload = st.sidebar.file_uploader("Upload an image", type=["png", "jpg", "jpeg"])
-my_model = st.sidebar.selectbox("Choose Model", list(model_id_dict.keys()))
+my_model = st.sidebar.selectbox("Choose Model", list(model_url_dict.keys()))
 
 
 if my_upload is not None:

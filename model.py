@@ -84,11 +84,11 @@ class RoIHeadsKL(torchvision.models.detection.roi_heads.RoIHeads):
         self.num_classes = num_classes
 
         # soft nms params
-        self.softnms = cfg['softnms'] if not cfg is None and 'softnms' in cfg else False
+        self.softnms = cfg['softnms'] if cfg is None and 'softnms' in cfg else False
         self.softnms_sigma = 0.5
 
         # variance vote params
-        self.var_vote = cfg['var_vote'] if not cfg is None and 'var_vote' in cfg else False
+        self.var_vote = cfg['var_vote'] if cfg is not None and 'var_vote' in cfg else False
         self.var_sigma_t = 0.02
 
     def postprocess_detections_kl(
@@ -422,18 +422,18 @@ def get_sample_prediction(model, img):
     return plot_img_bbox(img, prediction)
 
 
-def plot_img_bbox(img, target, score_thres = 0.8):
+def plot_img_bbox(img, target, score_thres = 0.75):
     # plot the image and bboxes
     if 'scores' in target:
         classes = [idx_to_class[l.item()] for l in target['labels']]
-        img = draw_boxes(target['boxes'].cpu().numpy(), classes, target['scores'].cpu().numpy(), 
-                         img, score_thres) 
-        
+        img = draw_boxes(target['boxes'].cpu().numpy(), classes, target['scores'].cpu().numpy(),
+                         img, score_thres)
+
     return img
 
 
 def draw_boxes(boxes, classes, scores, image, score_thres):
-    FONT_SCALE = 1e-3  # Adjust for larger font size in all images
+    FONT_SCALE = 5*1e-4  # Adjust for larger font size in all images
     THICKNESS_SCALE = 1e-3  # Adjust for larger thickness in all images
     
     W, H = image.size
@@ -452,6 +452,6 @@ def draw_boxes(boxes, classes, scores, image, score_thres):
                 (int(box[2]), int(box[3])),
                 (255, 0, 0), 2
             )
-            cv2.putText(image, f"{classes[i]},{scores[i]:0.2f}", (int(box[0]), int(box[1]-10)),
-                        cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 0, 0), 2)
+            cv2.putText(image, f"{classes[i]},{scores[i]:0.2f}", (int(box[0]), int(max(20, box[1]-10))),
+                        cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 0, 0), thickness)
     return image
