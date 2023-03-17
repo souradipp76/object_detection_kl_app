@@ -8,8 +8,8 @@ from PIL import Image
 import model
 
 model_url_dict = {
-    'Faster-RCNN-Resnet50-FPN': 'https://drive.google.com/u/1/uc?id=12HQmHq2KD52JjtLWYTFcDShMl-a7xlE4&export=download', 
-    'Faster-RCNN-Resnet50-FPN + KL Loss': 'https://drive.google.com/u/1/uc?id=1vOvWUTMH9D7diTo_mbhswkWOR7WnXe6N&export=download'
+    'Faster-RCNN-Resnet50-FPN': '12HQmHq2KD52JjtLWYTFcDShMl-a7xlE4', 
+    'Faster-RCNN-Resnet50-FPN + KL Loss': '1vOvWUTMH9D7diTo_mbhswkWOR7WnXe6N'
 }
 
 model_path_dict = {
